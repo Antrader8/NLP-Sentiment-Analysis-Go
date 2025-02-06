@@ -1,56 +1,53 @@
+
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
+	"strings"
 )
 
-type SentimentRequest struct {
-	Text string `json:"text"`
-}
+// Simple sentiment analysis function
+func analyzeSentiment(text string) string {
+	text = strings.ToLower(text)
+	positiveKeywords := []string{"good", "great", "excellent", "happy", "love"}
+	negativeKeywords := []string{"bad", "terrible", "horrible", "sad", "hate"}
 
-type SentimentResponse struct {
-	Sentiment string `json:"sentiment"`
-	Score     float64 `json:"score"`
-}
-
-func analyzeSentiment(text string) (string, float64) {
-	// Placeholder for actual NLP model inference
-	// In a real application, this would call an ML model
-	if len(text) == 0 {
-		return "neutral", 0.5
+	positiveScore := 0
+	negativeScore := 0
+	
+	words := strings.Fields(text)
+	for _, word := range words {
+		for _, pk := range positiveKeywords {
+			if strings.Contains(word, pk) {
+				positiveScore++
+			}
+		}
+		for _, nk := range negativeKeywords {
+			if strings.Contains(word, nk) {
+				negativeScore++
+			}
+		}
 	}
 
-	if len(text) %% 2 == 0 {
-		return "positive", 0.9
+	if positiveScore > negativeScore {
+		return "Positive"
+	} else if negativeScore > positiveScore {
+		return "Negative"
 	} else {
-		return "negative", 0.1
+		return "Neutral"
 	}
-}
-
-func sentimentHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req SentimentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	sentiment, score := analyzeSentiment(req.Text)
-	resp := SentimentResponse{Sentiment: sentiment, Score: score}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
 }
 
 func main() {
-	http.HandleFunc("/analyze", sentimentHandler)
-	fmt.Println("Starting server on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	phrases := []string{
+		"This is a great movie, I love it!",
+		"The service was terrible and I hate it.",
+		"It was an okay experience.",
+		"I am happy with the excellent results.",
+	}
+
+	for _, phrase := range phrases {
+		fmt.Printf("Phrase: "%s" -> Sentiment: %s
+", phrase, analyzeSentiment(phrase))
+	}
 }
